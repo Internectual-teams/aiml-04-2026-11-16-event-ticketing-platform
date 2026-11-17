@@ -1,0 +1,5 @@
+user_id,event_id,timestamp
+user_001,event_101,2026-11-15 10:30:00
+user_002,event_102,2026-11-15 11:45:00
+user_003,event_103,2026-11-15 14:20:00
+user_001,event_104,2026-11-16 09:15:00

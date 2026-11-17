@@ -70,6 +70,7 @@ coverage.xml
 ehthumbs.db
 Thumbs.db
 
-# Generated data files (preserve directory with .gitkeep)
+# Generated data files (preserve directory with .gitkeep and sample datasets)
 data/*
 !data/.gitkeep
+!data/sample_*.csv

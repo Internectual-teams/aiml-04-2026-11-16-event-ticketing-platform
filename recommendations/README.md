@@ -2,18 +2,19 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.12%20%7C%203.11-blue.svg)](https://www.python.org/)
 [![Sprint](https://img.shields.io/badge/sprint-1%20(2026--11--16%20to%202026--11--22)-orange.svg)]()
-[![Ticket](https://img.shields.io/badge/ticket-AIML--0011--W1--01-green.svg)]()
+[![Ticket](https://img.shields.io/badge/ticket-AIML--0011--W1--02-green.svg)]()
 [![Team](https://img.shields.io/badge/team-AIML--04-purple.svg)]()
 
 ## 1. Project Overview
 
 The **Recommendations Service** is a core sub-service of the **BookMyShow Event Ticketing Platform**. As BookMyShow expands into local events, this service is responsible for analyzing past user behavior, ticket bookings, and event category affinities to generate personalized event recommendations.
 
-### Sprint 1 Objective & Responsibility
-- **Ticket ID:** `AIML-0011-W1-01`
+### Sprint 1 Objectives & Responsibility
+- **Sprint 1, Ticket 1:** `AIML-0011-W1-01` — Virtual environment setup, dependencies, structure, Dockerfile, baseline tests.
+- **Sprint 1, Ticket 2:** `AIML-0011-W1-02` — Data loading and preprocessing pipeline for user event interaction data.
 - **Assigned Engineer:** Adireddy Devendra (Senior Python / ML Engineer)
 - **Role:** Recommendations Service Lead
-- **Sprint Goal:** Establish a reproducible Python virtual environment, package dependencies, clean project architecture, testing harness with `pytest`, containerization via Dockerfile, and Git workflow without interfering with teammate services (`events_api/`).
+- **Sprint Goal:** Establish reproducible environment and robust data ingestion/cleaning pipelines for historical user-event interactions without interfering with teammate services (`events_api/`).
 
 ---
 
@@ -24,9 +25,10 @@ The **Recommendations Service** is a core sub-service of the **BookMyShow Event 
 | **Project** | BookMyShow Event Ticketing Platform (Fictional MVP) |
 | **Team** | AIML-04 |
 | **Sprint** | Sprint 1 (2026-11-16 to 2026-11-22) |
-| **Ticket Key** | `AIML-0011-W1-01` |
+| **Current Ticket Key** | `AIML-0011-W1-02` (Data Loading & Preprocessing) |
+| **Previous Ticket Key** | `AIML-0011-W1-01` (Environment Setup & Git Setup) |
 | **Teammate (Events API)** | Prudhvi Kosuri (`AIML-0010-W1-01`) |
-| **Recommendations Lead** | Adireddy Devendra (`AIML-0011-W1-01`) |
+| **Recommendations Lead** | Adireddy Devendra (`AIML-0011-W1-02`) |
 
 ---
 
@@ -48,16 +50,19 @@ The service is strictly encapsulated inside `recommendations/` to ensure zero co
 ```
 recommendations/
 ├── data/
-│   └── .gitkeep               # Preserves data directory structure for CSV/JSON files
+│   ├── .gitkeep                               # Preserves data directory structure
+│   └── sample_user_event_history.csv          # Synthetic sample dataset for testing/validation
 ├── src/
-│   ├── __init__.py            # Module initializer and service version
-│   └── main.py                # Service entry point & environment verification
+│   ├── __init__.py                            # Module initializer and service version
+│   ├── data_processing.py                     # Data loading, validation, and cleaning pipeline
+│   └── main.py                                # Service entry point & environment verification
 ├── tests/
-│   └── test_setup.py          # Setup & dependency validation test suite
-├── .gitignore                 # Excludes venv, pycache, temporary artifacts
-├── Dockerfile                 # Multi-layer container specification
-├── README.md                  # Service documentation & operations manual
-└── requirements.txt           # Production & test dependencies
+│   ├── test_data_processing.py                # Comprehensive test suite for data loading & cleaning
+│   └── test_setup.py                          # Setup & dependency validation test suite
+├── .gitignore                                 # Excludes venv, pycache, temporary artifacts
+├── Dockerfile                                 # Multi-layer container specification
+├── README.md                                  # Service documentation & operations manual
+└── requirements.txt                           # Production & test dependencies
 ```
 
 ---
@@ -119,28 +124,86 @@ deactivate
 
 ---
 
-## 6. Application Execution
+## 6. Data Loading and Preprocessing
 
-To run the Recommendations Service starter application:
+### Purpose of `data_processing.py`
+The `recommendations/src/data_processing.py` module serves as the foundational data ingestion layer for the Recommendations Service. It ensures that raw user interaction logs from CSV files are properly loaded, schema-validated, type-corrected, cleansed of corrupted or missing records, and formatted into clean pandas DataFrames ready for downstream recommendation algorithms (such as collaborative filtering and content-based event filtering).
 
-```bash
-# Ensure venv is activated
-python src/main.py
+### The `load_data(file_path)` Function
+The primary interface is `load_data(file_path)`:
+```python
+def load_data(file_path: Union[str, Path, os.PathLike]) -> pd.DataFrame:
 ```
 
-### Expected Output
+### Expected CSV Columns
+The incoming dataset must contain the following required columns:
+1. `user_id`: Unique identifier for the user.
+2. `event_id`: Unique identifier for the event.
+3. `timestamp`: Timestamp representing when the user interacted with or booked the event.
+
+*Note: Any additional useful columns (such as `rating`, `category`, `price`) are safely preserved in the resulting DataFrame.*
+
+### Data Type Conversions
+- **`user_id`**: Converted to pandas `string` dtype (`StringDtype`), strictly preserving leading zeros and string identifiers (e.g., `'001'` is not converted to integer `1`).
+- **`event_id`**: Converted to pandas `string` dtype (`StringDtype`), strictly preserving leading zeros and string identifiers (e.g., `'0101'` remains intact).
+- **`timestamp`**: Converted to pandas `datetime64[ns]` using `pd.to_datetime`.
+
+### Missing-Value & Blank Identifier Handling
+- Rows with missing (`null`, `NaN`, `pd.NA`) required columns (`user_id`, `event_id`, or `timestamp`) are dropped.
+- Whitespace is trimmed from identifier values (`user_id.str.strip()` and `event_id.str.strip()`).
+- Empty or whitespace-only identifiers (`""`, `"   "`) are converted to `pd.NA` and discarded.
+- Optional metadata columns with null values are retained if the required identifier and timestamp fields are valid.
+
+### Invalid Timestamp Handling
+- Timestamps are parsed using `pd.to_datetime(..., errors="coerce")`.
+- Unparseable strings, invalid date structures, or out-of-range dates are converted to `pd.NaT` (Not-a-Time).
+- Any row with a `pd.NaT` timestamp is dropped safely.
+- The DataFrame index is reset (`reset_index(drop=True)`) after row deletion.
+
+### Column Name Normalization
+- Column headers are stripped of whitespace and converted to lowercase (e.g., `" USER_ID "` becomes `"user_id"`).
+- Normalization prevents duplicate column collisions if identically named columns with different casings exist.
+
+### Error Handling
+- **`FileNotFoundError`**: Raised with a descriptive message if the file path does not exist.
+- **`EmptyDataError`**: Raised if the CSV file is 0 bytes or has no parseable columns/data.
+- **`ValueError`**: Raised if a directory path is passed or if required columns (`user_id`, `event_id`, `timestamp`) are missing.
+- **`TypeError`**: Raised if `file_path` is `None` or an invalid non-string/non-path type.
+
+### How to Execute the Function
+
+#### Option 1: Direct Module Execution
+Run the script directly from `recommendations/`:
+```bash
+python src/data_processing.py
+```
+Or specify a custom CSV path:
+```bash
+python src/data_processing.py data/sample_user_event_history.csv
+```
+
+#### Option 2: Programmatic Usage in Python
+```python
+from src.data_processing import load_data
+
+df = load_data("data/sample_user_event_history.csv")
+
+print(df.head())
+print(df.dtypes)
+```
+
+**Expected Output:**
 ```text
-============================================================
-  BookMyShow Recommendations Service
-  Team: AIML-04 | Ticket: AIML-0011-W1-01 | Sprint: 1
-============================================================
-Environment & Dependency Verification:
-  - Python:       3.12.3
-  - pandas:       2.3.3
-  - numpy:        1.26.4
-  - scikit-learn: 1.6.1
-============================================================
-Status: Service environment initialized successfully.
+    user_id   event_id           timestamp
+0  user_001  event_101 2026-11-15 10:30:00
+1  user_002  event_102 2026-11-15 11:45:00
+2  user_003  event_103 2026-11-15 14:20:00
+3  user_001  event_104 2026-11-16 09:15:00
+
+user_id      string[python]
+event_id     string[python]
+timestamp    datetime64[ns]
+dtype: object
 ```
 
 ---
@@ -149,31 +212,66 @@ Status: Service environment initialized successfully.
 
 Automated tests are managed with `pytest`.
 
-### Run All Setup Tests
+### Run All Tests (Setup + Data Processing)
 From the `recommendations/` directory:
 ```bash
 pytest
 ```
 
-### Verbose Mode with Output Details
+### Run Only Data Processing Tests
+```bash
+pytest -v -s tests/test_data_processing.py
+```
+
+### Run Setup & Environment Verification Tests
 ```bash
 pytest -v -s tests/test_setup.py
 ```
 
 ### Expected Test Output
 ```text
+tests/test_data_processing.py::test_load_valid_csv PASSED
+tests/test_data_processing.py::test_return_type_is_dataframe PASSED
+tests/test_data_processing.py::test_user_id_dtype_and_leading_zeros PASSED
+tests/test_data_processing.py::test_event_id_dtype_and_leading_zeros PASSED
+tests/test_data_processing.py::test_timestamp_dtype PASSED
+tests/test_data_processing.py::test_handling_missing_required_values PASSED
+tests/test_data_processing.py::test_handling_invalid_timestamps PASSED
+tests/test_data_processing.py::test_removing_blank_identifiers PASSED
+tests/test_data_processing.py::test_whitespace_stripped_from_valid_identifiers PASSED
+tests/test_data_processing.py::test_missing_required_columns_raises_value_error PASSED
+tests/test_data_processing.py::test_nonexistent_file_path_raises_file_not_found PASSED
+tests/test_data_processing.py::test_empty_csv_file_raises_empty_data_error PASSED
+tests/test_data_processing.py::test_preserving_additional_columns PASSED
+tests/test_data_processing.py::test_reset_index_after_cleaning PASSED
+tests/test_data_processing.py::test_column_name_normalization PASSED
+tests/test_data_processing.py::test_normalize_column_names_duplicate_avoidance PASSED
+tests/test_data_processing.py::test_invalid_input_path_types PASSED
+tests/test_data_processing.py::test_directory_path_raises_value_error PASSED
+tests/test_data_processing.py::test_sample_user_event_history_file_if_present PASSED
 tests/test_setup.py::test_pandas_import PASSED
 tests/test_setup.py::test_numpy_import PASSED
 tests/test_setup.py::test_sklearn_import PASSED
 tests/test_setup.py::test_app_module_import PASSED
 tests/test_setup.py::test_service_info PASSED
 tests/test_setup.py::test_main_execution PASSED
-========================== 6 passed in 0.45s ==========================
+========================== 25 passed in 2.00s ==========================
 ```
 
 ---
 
-## 8. Docker Build and Run Instructions
+## 8. Application Execution
+
+To run the Recommendations Service starter application:
+
+```bash
+# Ensure venv is activated
+python src/main.py
+```
+
+---
+
+## 9. Docker Build and Run Instructions
 
 The service includes a production-ready `Dockerfile` based on `python:3.12-slim` following security and caching best practices (non-root user, multi-stage layer caching).
 
@@ -203,7 +301,7 @@ docker run --rm bookmyshow-recommendations:latest pytest -v
 
 ---
 
-## 9. Service Interface Contract (Team Coordination)
+## 10. Service Interface Contract (Team Coordination)
 
 In accordance with the team architectural contract defined in the root `README.md`:
 
@@ -218,43 +316,45 @@ In accordance with the team architectural contract defined in the root `README.m
 
 ---
 
-## 10. Git Workflow & Manual Instructions
+## 11. Git Workflow & Manual Instructions
 
-All development for this ticket is isolated to the `recommendations/` directory on branch `AIML-0011-W1-01`.
+All development for this ticket is isolated to the `recommendations/` directory on ticket branch `AIML-0011-W1-02`.
 
 ### Step-by-Step Git Commands
 
 1. **Verify Branch:**
    ```bash
    git branch --show-current
-   # Output should be: AIML-0011-W1-01
-   # If not: git checkout -b AIML-0011-W1-01
+   # Output should be: AIML-0011-W1-02
    ```
 
-2. **Stage Only Recommendations Changes:**
+2. **Stage Only Relevant Recommendations Changes:**
    ```bash
-   git add recommendations/
+   git add recommendations/src/data_processing.py
+   git add recommendations/tests/test_data_processing.py
+   git add recommendations/data/sample_user_event_history.csv
+   git add recommendations/README.md
    ```
 
 3. **Verify Staged Files:**
    ```bash
    git status
    ```
-   Ensure `venv/` is **not** staged and only the intended files under `recommendations/` are listed.
+   Ensure `venv/`, `__pycache__/`, `.pytest_cache/` are **not** staged and only the intended files under `recommendations/` are listed.
 
 4. **Commit Changes:**
    ```bash
-   git commit -m "AIML-0011-W1-01: set up recommendations service environment and structure"
+   git commit -m "AIML-0011-W1-02: Implement data loading and preprocessing module"
    ```
 
 5. **Push Branch to GitHub:**
    ```bash
-   git push origin AIML-0011-W1-01
+   git push origin AIML-0011-W1-02
    ```
 
 6. **Create a Pull Request:**
    - Open GitHub: `https://github.com/Internectual-teams/aiml-04-2026-11-16-event-ticketing-platform`
-   - Click **Compare & pull request** for `AIML-0011-W1-01`.
-   - Set Base: `main` <- Compare: `AIML-0011-W1-01`.
-   - Title: `AIML-0011-W1-01: Set up Python Environment and Git Repository (Recommendations Service)`
+   - Click **Compare & pull request** for `AIML-0011-W1-02`.
+   - Set Base: `main` <- Compare: `AIML-0011-W1-02`.
+   - Title: `AIML-0011-W1-02: Implement Data Loading and Preprocessing`
    - Assign teammate for review and link PR in the Internectual workspace.
