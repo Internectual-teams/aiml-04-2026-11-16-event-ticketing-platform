@@ -37,6 +37,7 @@ if str(SRC_DIR) not in sys.path:
 
 from src.data_processing import load_data
 from src.recommendation_engine import (
+    apply_popularity_fallback,
     calculate_event_popularity,
     get_category_events_map,
     get_user_category_affinities,
@@ -380,6 +381,22 @@ def test_get_user_category_affinities(sample_history_df: pd.DataFrame):
     assert len(affinities_u3) == 3
     cats = [c for c, _ in affinities_u3]
     assert set(cats) == {"Music", "Comedy", "Theatre"}
+
+
+def test_apply_popularity_fallback_direct():
+    """Verify that apply_popularity_fallback accurately backfills slots without duplicates."""
+    recs = ["E1"]
+    ranked = ["E1", "E2", "E3", "E4"]
+    seen = {"E1", "E_ATTENDED"}
+    result = apply_popularity_fallback(
+        recs=recs,
+        ranked_popular_events=ranked,
+        seen=seen,
+        n_recommendations=3,
+    )
+    assert result == ["E1", "E2", "E3"]
+    assert "E_ATTENDED" not in result
+    assert len(result) == 3
 
 
 def test_sample_csv_without_category():
