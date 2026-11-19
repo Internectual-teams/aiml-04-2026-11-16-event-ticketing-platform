@@ -1,4 +1,4 @@
-"""Pydantic models for event request and response data."""
+"""Pydantic models for event and ticket API data."""
 
 from datetime import datetime
 from uuid import UUID
@@ -17,6 +17,20 @@ class EventCreate(BaseModel):
 
 
 class Event(EventCreate):
-    """An event returned by the API, including its ID."""
+    """An event returned by the API."""
+
+    id: UUID
+
+
+class TicketCreate(BaseModel):
+    """Fields required when booking tickets."""
+
+    event_id: UUID
+    user_id: str
+    quantity: int = Field(gt=0)
+
+
+class Ticket(TicketCreate):
+    """A ticket booking returned by the API."""
 
     id: UUID

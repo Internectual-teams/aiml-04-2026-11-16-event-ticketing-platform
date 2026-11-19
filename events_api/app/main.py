@@ -1,16 +1,16 @@
-"""FastAPI application for managing event listings."""
+"""FastAPI application for event listings and ticket bookings."""
 
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI, HTTPException
 
-# The repository uses app.models. In a flat Internectual workspace, use
-# `from models import Event, EventCreate` instead.
-from app.models import Event, EventCreate
+# In the repository, use app.models. In the flat editor, use models instead.
+from app.models import Event, EventCreate, Ticket, TicketCreate
 
 app = FastAPI(title="Events API", version="0.1.0")
 
 events: dict[UUID, Event] = {}
+tickets: dict[UUID, Ticket] = {}
 
 
 @app.get("/")
@@ -36,3 +36,15 @@ def get_event(event_id: UUID) -> Event:
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
     return event
+
+
+@app.post("/tickets", status_code=201, response_model=Ticket)
+def create_ticket(ticket_data: TicketCreate) -> Ticket:
+    ticket = Ticket(id=uuid4(), **ticket_data.model_dump())
+    tickets[ticket.id] = ticket
+    return ticket
+
+
+@app.get("/tickets", response_model=list[Ticket])
+def list_tickets() -> list[Ticket]:
+    return list(tickets.values())
