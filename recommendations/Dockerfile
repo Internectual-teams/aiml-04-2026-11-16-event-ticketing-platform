@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1
 # BookMyShow Event Ticketing Platform - Recommendations Service
-# Team: AIML-04 | Ticket: AIML-0011-W1-01 | Sprint: 1
+# Team: AIML-04 | Ticket: AIML-0011-W1-04 | Sprint: 1
 
 FROM python:3.12-slim
 
-# Prevent Python from writing bytecode (.pyc) and enable unbuffered logging
+# Prevent Python from writing bytecode (.pyc) and enable unbuffered output logging
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app
@@ -29,20 +29,22 @@ RUN pip install --no-cache-dir --upgrade pip \
 RUN groupadd --gid 1001 appgroup \
     && useradd --uid 1001 --gid appgroup --shell /bin/bash --create-home appuser
 
-# Copy application source code and directory structure
+# Copy application source code, dataset, and test suite
 COPY src/ /app/src/
 COPY data/ /app/data/
 COPY tests/ /app/tests/
 
-# Set file ownership to non-root user
-RUN chown -R appuser:appgroup /app
+# Ensure application directories and mounted volumes are writeable
+RUN mkdir -p /app/data \
+    && chown -R appuser:appgroup /app \
+    && chmod -R 777 /app/data
 
 # Switch to non-root user
 USER appuser
 
-# Healthcheck to verify Python runtime responds
+# Healthcheck to verify Python runtime and core libraries respond
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import pandas, numpy, sklearn; print('healthy')" || exit 1
 
-# Default command to run the Recommendations Service starter app
-CMD ["python", "src/main.py"]
+# Default command: Execute the main recommendation workflow
+CMD ["python", "-m", "src.main"]

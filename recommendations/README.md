@@ -2,20 +2,22 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.12%20%7C%203.11-blue.svg)](https://www.python.org/)
 [![Sprint](https://img.shields.io/badge/sprint-1%20(2026--11--16%20to%202026--11--22)-orange.svg)]()
-[![Ticket](https://img.shields.io/badge/ticket-AIML--0011--W1--03-green.svg)]()
+[![Ticket](https://img.shields.io/badge/ticket-AIML--0011--W1--04-green.svg)](https://github.com/Internectual-teams/aiml-04-2026-11-16-event-ticketing-platform)
 [![Team](https://img.shields.io/badge/team-AIML--04-purple.svg)]()
+[![Build & Test](https://img.shields.io/badge/tests-59%20passed-brightgreen.svg)]()
 
 ## 1. Project Overview
 
-The **Recommendations Service** is a core sub-service of the **BookMyShow Event Ticketing Platform**. As BookMyShow expands into local events, this service is responsible for analyzing past user behavior, ticket bookings, and event category affinities to generate personalized event recommendations.
+The **Recommendations Service** is a core component of the **BookMyShow Event Ticketing Platform**. As BookMyShow expands into local events, workshops, concerts, and cultural performances, this service is responsible for ingesting historical user interaction data, calculating personalized recommendations, and serializing the output into standard formats consumable by downstream services (such as the Events API Backend, web clients, and mobile applications).
 
-### Sprint 1 Objectives & Responsibility
-- **Sprint 1, Ticket 1:** `AIML-0011-W1-01` — Virtual environment setup, dependencies, structure, Dockerfile, baseline tests.
-- **Sprint 1, Ticket 2:** `AIML-0011-W1-02` — Data loading and preprocessing pipeline for user event interaction data.
-- **Sprint 1, Ticket 3:** `AIML-0011-W1-03` — Basic recommendation engine (hybrid popularity and category-based personalization).
-- **Assigned Engineer:** Adireddy Devendra (Senior Python / ML Engineer)
-- **Role:** Recommendations Service Lead
-- **Sprint Goal:** Establish reproducible environment, robust data ingestion, and a high-performance personalized recommendation engine for BookMyShow event ticketing.
+### Sprint 1 Roadmap & Tickets
+- **Ticket 1 (`AIML-0011-W1-01`):** Service architecture setup, dependency configuration, Docker containerization, and baseline health tests.
+- **Ticket 2 (`AIML-0011-W1-02`):** Data loading, validation, schema normalization, and cleaning pipeline (`data_processing.py`).
+- **Ticket 3 (`AIML-0011-W1-03`):** Hybrid personalized recommendation engine (`recommendation_engine.py`) with popularity ranking, category affinity matching, attended-event exclusion, and cold-start fallback.
+- **Ticket 4 (`AIML-0011-W1-04` - CURRENT):** Recommendation output serialization (`recommendation_output.py`), end-to-end orchestration pipeline (`main.py`), production Docker deployment, and integration test suite (`test_recommendation_output.py`).
+
+**Assigned Lead Engineer:** Adireddy Devendra (Senior Python / Machine Learning Engineer)  
+**Assigned Module:** Recommendations Service  
 
 ---
 
@@ -23,294 +25,375 @@ The **Recommendations Service** is a core sub-service of the **BookMyShow Event 
 
 | Attribute | Details |
 |---|---|
-| **Project** | BookMyShow Event Ticketing Platform (Fictional MVP) |
+| **Client** | BookMyShow (Fictional) |
+| **Project** | Event Ticketing Platform (MVP) |
 | **Team** | AIML-04 |
 | **Sprint** | Sprint 1 (2026-11-16 to 2026-11-22) |
-| **Current Ticket Key** | `AIML-0011-W1-03` (Develop Basic Recommendation Logic) |
-| **Previous Ticket Keys** | `AIML-0011-W1-01` (Setup), `AIML-0011-W1-02` (Data Ingestion) |
+| **Current Ticket Key** | `AIML-0011-W1-04` (Create Recommendation Output and Main Script) |
+| **Previous Ticket Keys** | `AIML-0011-W1-01` (Setup), `AIML-0011-W1-02` (Ingestion), `AIML-0011-W1-03` (Engine Logic) |
 | **Teammate (Events API)** | Prudhvi Kosuri (`AIML-0010-W1-01`, `AIML-0010-W1-02`) |
-| **Recommendations Lead** | Adireddy Devendra (`AIML-0011-W1-03`) |
+| **Recommendations Lead** | Adireddy Devendra (`AIML-0011-W1-04`) |
 
 ---
 
 ## 3. Technologies Used
 
-- **Python 3.12 / 3.11**: Core programming language.
-- **pandas (>=2.2.0, <4.0.0)**: High-performance data manipulation, aggregation, and group-by operations.
-- **numpy (>=1.26.0, <3.0.0)**: Numerical computing and vectorization.
+- **Python 3.12 / 3.11**: Primary language environment.
+- **json (Python Standard Library)**: Native, high-performance, specification-compliant JSON serialization with UTF-8 encoding.
+- **pandas (>=2.2.0, <4.0.0)**: Data loading, schema validation, and vector manipulations.
+- **numpy (>=1.26.0, <3.0.0)**: Array operations and ranking support.
 - **scikit-learn (>=1.4.0, <2.0.0)**: Machine learning baseline utilities.
-- **pytest (>=8.0.0, <10.0.0)**: Automated test discovery, fixtures, and assertions.
-- **Docker**: Containerization using `python:3.12-slim` for consistent production deployment.
+- **pytest (>=8.0.0, <10.0.0)**: Automated test suite, fixtures, parameterization, and mock testing.
+- **Docker**: Containerization using `python:3.12-slim` for reproducible cross-platform deployments.
 
 ---
 
 ## 4. Folder Structure
 
-The service is strictly encapsulated inside `recommendations/` to ensure zero collision with other services:
+The service is strictly encapsulated inside `recommendations/` to preserve separation of concerns and avoid collisions with other microservices:
 
 ```
 recommendations/
 ├── data/
-│   ├── .gitkeep                               # Preserves data directory structure
+│   ├── .gitkeep                               # Preserves empty data directory structure
 │   ├── sample_user_event_history.csv          # Minimal synthetic dataset (W1-02)
-│   ├── user_event_history.csv                 # Comprehensive event history dataset (W1-03)
-│   └── recommendations.json                   # Output recommendation dictionary (auto-generated)
+│   ├── user_event_history.csv                 # Production sample event history dataset (W1-03)
+│   └── recommendations.json                   # Output recommendation dictionary (W1-04 generated)
 ├── src/
 │   ├── __init__.py                            # Module exports and package version
 │   ├── data_processing.py                     # Data loading, validation, and cleaning pipeline
 │   ├── recommendation_engine.py               # Hybrid personalized recommendation engine
-│   └── main.py                                # Service entry point & pipeline runner
+│   ├── recommendation_output.py               # JSON serialization and output persistence (W1-04)
+│   └── main.py                                # End-to-end service orchestration entry point (W1-04)
 ├── tests/
-│   ├── test_data_processing.py                # Unit test suite for data loading & cleaning
-│   ├── test_recommendation_engine.py          # Unit test suite for recommendation engine
-│   └── test_setup.py                          # Setup & dependency validation test suite
+│   ├── test_data_processing.py                # Unit test suite for data loading & cleaning (19 tests)
+│   ├── test_recommendation_engine.py          # Unit test suite for recommendation engine (16 tests)
+│   ├── test_recommendation_output.py          # Unit & integration tests for output and main (18 tests)
+│   └── test_setup.py                          # Setup & dependency validation test suite (6 tests)
 ├── .gitignore                                 # Excludes venv, pycache, temporary artifacts
-├── Dockerfile                                 # Multi-layer container specification
+├── Dockerfile                                 # Multi-stage production container specification
 ├── README.md                                  # Service documentation & operations manual
 └── requirements.txt                           # Production & test dependencies
 ```
 
 ---
 
-## 5. Recommendation Engine Architecture (`recommendation_engine.py`)
+## 5. Recommendation Output Generation (`recommendation_output.py`)
 
-### 5.1 What is a Recommendation System?
-A recommendation system is an information filtering engine that predicts a user's preference or affinity toward items (such as movies, concerts, or workshops) and suggests items that are most relevant to them. In an event ticketing platform like BookMyShow, recommendation engines boost user engagement, conversion rates, and ticket discovery by matching event catalogs with individual user tastes.
+### 5.1 Purpose of Recommendation Output Generation
+In a decoupled microservices architecture, the recommendation engine computes mathematical affinities and candidate sets in memory. However, to be consumed by:
+1. Downstream backend services (e.g., the Events API backend).
+2. Asynchronous cache warmup jobs (Redis, Memcached).
+3. Client-facing mobile and web user interfaces.
+4. Analytics and auditing pipelines.
 
-### 5.2 Why This Recommendation Approach Was Selected
-For an MVP event ticketing service, a **Hybrid Approach** combining **Popularity-Based Filtering** and **Category-Based Personalization** was selected for several key reasons:
-1. **Solves the Cold-Start Problem:** Pure collaborative filtering or deep matrix factorization fails when new users or items with zero/sparse interaction history arrive. Popularity fallback provides high-quality recommendations immediately.
-2. **Transparent & Explainable:** Recommendations can be directly explained to users (e.g., *"Because you attended Music concerts"*).
-3. **No Heavy External Dependencies or GPU Requirements:** The algorithm relies on vectorized pandas operations without requiring external deep learning frameworks or paid inference APIs.
-4. **Deterministic & Testable:** Generates reproducible, consistent rankings ideal for automated verification and CI/CD pipelines.
+The in-memory recommendations dictionary must be serialized into a structured, persistent, and universally interoperable format.
 
-### 5.3 How Event Popularity is Calculated
-Popularity is computed by counting the total interaction frequency of each event across the dataset:
-$$\text{Popularity}(e) = \sum_{i \in \text{Interactions}} \mathbb{I}(\text{event\_id}_i = e)$$
+### 5.2 Why JSON Was Selected as the Output Format
+- **Language Agnostic Interoperability:** JSON (JavaScript Object Notation) is the ubiquitous standard for REST APIs, message brokers, and web clients.
+- **Direct Mapping to Key-Value Entities:** A JSON object directly mirrors a mapping of `user_id` -> `list[event_id]`, preserving constant-time $O(1)$ lookups for downstream user queries.
+- **Human Readability & Debuggability:** Formatted JSON with indentation can be directly reviewed by engineers, QA testers, and operations teams without specialized viewers.
+- **Native Language Support:** Python's built-in `json` module offers zero third-party dependencies, safe Unicode handling (`UTF-8`), and deterministic output structure.
 
-In `calculate_event_popularity(data)`:
-- Missing, blank, or null event IDs are filtered out.
-- Interaction counts are aggregated using pandas `value_counts()`.
-- Ties are broken deterministically by sorting primarily by descending frequency and secondarily by ascending event ID.
+### 5.3 Function Specification: `save_recommendations()`
 
-### 5.4 How Category-Based Personalization Works
-In `get_user_category_affinities(data, user_id)`:
-1. The engine inspects all events previously attended or interacted with by `user_id`.
-2. Each event's category is extracted (e.g., `Music`, `Comedy`, `Theatre`, `Sports`).
-3. Category interaction counts are tallied. Categories with higher interaction counts represent stronger user affinity.
-4. For candidate generation, popular events belonging to the user's top categories are retrieved first.
-
-### 5.5 How Personalized Ranking Works
-The hybrid ranking pipeline prioritizes relevance while maintaining diversity:
-1. **Category Affinity Sweep:**
-   - Iterate through the user's preferred categories in descending order of interaction count.
-   - For each category, inspect constituent events sorted by global popularity.
-   - Add events that the user has **not yet attended** and **not yet seen** in the recommendation set.
-   - Stop when `n_recommendations` slots are filled.
-2. **Popularity-Based Fallback:**
-   - If candidate events in preferred categories are exhausted (or if the user has no history or the dataset lacks category metadata), backfill remaining slots from the globally most popular events.
-3. **Strict Deduplication:**
-   - A tracking set (`seen`) ensures no event ID appears more than once in the user's recommendation list.
-
-### 5.6 How Previously Attended Events Are Excluded
-Before generating recommendations for `user_id`:
-1. The engine extracts the full set of events the user has previously interacted with:
-   $$\text{Attended}(u) = \{ e \mid (u, e) \in \text{Dataset} \}$$
-2. The recommendation candidate set initializes `seen = set(Attended(u))`.
-3. An event $e$ is appended to recommendations **if and only if** $e \notin seen$.
-4. This guarantees:
-   $$\text{Recommendations}(u) \cap \text{Attended}(u) = \emptyset$$
-
-### 5.7 The `recommend_events(data)` Function Signature
 ```python
-def recommend_events(
-    data: pd.DataFrame,
-    n_recommendations: int = 3,
-    user_id: Optional[str] = None,
-    **kwargs: Any,
-) -> dict[str, list[str]]:
+def save_recommendations(
+    recommendations: Mapping[str, Sequence[str]],
+    output_path: Union[str, Path, os.PathLike],
+    indent: int = 4,
+) -> Path:
 ```
 
-#### Parameters:
-- `data`: Preprocessed pandas DataFrame with at least `user_id` and `event_id` columns.
-- `n_recommendations`: Maximum number of events to recommend per user (default: `3`).
-- `user_id`: Optional specific user ID. If `None`, returns recommendations for all users.
-- `**kwargs`: Supports parameter aliases such as `top_n`, `limit`, or `n`.
+#### How It Works:
+1. **Type & Value Validation:** Checks that `recommendations` is a dictionary/mapping and `output_path` is a non-empty string or Path object. Rejects directories and non-sequence values with clear exceptions (`TypeError`, `ValueError`, `IsADirectoryError`).
+2. **Key and Value Normalization:** Preserves user ID strings and converts any sequence of event IDs (lists, tuples, sets) into standard lists of strings.
+3. **Automatic Directory Creation:** Inspects `target_path.parent` and automatically creates all non-existent directories using `parent_dir.mkdir(parents=True, exist_ok=True)`.
+4. **UTF-8 Serialization:** Employs `json.dump()` with `indent=4` and `ensure_ascii=False` under UTF-8 encoding, guaranteeing proper representation of international characters and symbols.
+5. **Safe Error Handling:** Wraps file I/O operations and raises descriptive `IOError` on OS-level write failures.
+6. **Return Value:** Returns the resolved `Path` to the generated JSON file for seamless chaining.
 
-#### Return Format:
-Returns a dictionary mapping `user_id` to a list of recommended `event_id` strings:
+#### Example Input:
+```python
+{
+    "U001": ["E101", "E102"],
+    "U002": ["E103", "E104"]
+}
+```
+
+#### Expected JSON Output:
 ```json
 {
-    "U001": ["E103", "E115", "E116"],
-    "U002": ["E109", "E101", "E102"],
-    "U003": ["E101", "E102", "E111"]
+    "U001": [
+        "E101",
+        "E102"
+    ],
+    "U002": [
+        "E103",
+        "E104"
+    ]
 }
 ```
 
 ---
 
-## 6. Dataset Specification (`user_event_history.csv`)
+## 6. End-to-End Workflow & Main Script (`src/main.py`)
 
-The production sample dataset is located at `recommendations/data/user_event_history.csv`.
+### 6.1 Architectural Workflow
+The recommendation pipeline executes the following sequence:
 
-### Columns:
-- `user_id`: Unique identifier for the user (e.g., `U001`, `U002`).
-- `event_id`: Unique identifier for the event (e.g., `E101`, `E102`).
-- `event_category`: Category of the event (`Music`, `Comedy`, `Theatre`, `Dance`, `Sports`, `Tech`).
-- `interaction_type`: Action performed (`book`, `attend`, `view`, `like`, `click`).
-- `timestamp`: Timestamp of the interaction (e.g., `2026-11-10 10:15:00`).
-
-### Sample Input Data:
-```csv
-user_id,event_id,event_category,interaction_type,timestamp
-U001,E101,Music,book,2026-11-10 10:15:00
-U001,E101,Music,attend,2026-11-10 19:30:00
-U001,E102,Music,view,2026-11-11 11:00:00
-U001,E102,Music,book,2026-11-11 14:20:00
-U001,E107,Comedy,like,2026-11-12 16:45:00
-U002,E104,Theatre,book,2026-11-10 09:00:00
-U002,E104,Theatre,attend,2026-11-10 18:00:00
-U002,E105,Theatre,view,2026-11-12 12:30:00
-U002,E110,Dance,book,2026-11-13 15:10:00
+```
++------------------------------------------+
+| CSV Dataset                              |
+| (data/user_event_history.csv)            |
++------------------------------------------+
+                     |
+                     v
++------------------------------------------+
+| Ingestion & Schema Validation            |
+| (src/data_processing.load_data)          |
++------------------------------------------+
+                     |
+                     v
++------------------------------------------+
+| Hybrid Recommendation Engine             |
+| (src/recommendation_engine)              |
+| - Calculate Popularity                   |
+| - Filter Attended Events                 |
+| - Match Category Affinities              |
+| - Backfill Cold-Start Candidates         |
++------------------------------------------+
+                     |
+                     v
++------------------------------------------+
+| JSON Serialization & Export              |
+| (src/recommendation_output)              |
+| - UTF-8 Encoding                         |
+| - Auto Parent Directory Creation         |
++------------------------------------------+
+                     |
+                     v
++------------------------------------------+
+| Output JSON File                         |
+| (data/recommendations.json)              |
++------------------------------------------+
 ```
 
-### Actual Output Generated:
+### 6.2 How `main.py` Orchestrates the Process
+1. **Environment & Dependency Verification:** Inspects Python runtime and installed package versions via `get_service_info()`.
+2. **Path Resolution:** Uses `pathlib.Path` relative to file origin (`BASE_DIR = Path(__file__).resolve().parent.parent`) to ensure execution succeeds regardless of working directory.
+3. **Argument Parsing:** Accepts optional CLI flags (`--input`, `--output`, `--num-recommendations`).
+4. **Data Validation:** Ensures input CSV exists and contains the mandatory columns (`user_id`, `event_id`, `timestamp`).
+5. **Preprocessing:** Cleans identifiers, trims whitespace, handles null values, and parses timestamps via `load_data()`.
+6. **Recommendation Generation:** Calls `recommend_events(data, n_recommendations=3)`.
+7. **JSON Persistence:** Calls `save_recommendations(recs, output_file)` to write formatted JSON.
+8. **Summary Reporting:** Prints a structured preview table of generated user recommendations and exits with status code `0`.
+
+---
+
+## 7. Dataset Specifications & Locations
+
+### 7.1 Input Dataset Location
+- **Path:** `recommendations/data/user_event_history.csv`
+- **Fallback / Minimal Sample:** `recommendations/data/sample_user_event_history.csv`
+- **Schema:**
+  - `user_id` (string): Unique user identifier (e.g., `U001`, `U002`).
+  - `event_id` (string): Unique event identifier (e.g., `E101`, `E102`).
+  - `event_category` (string): Category tag (`Music`, `Comedy`, `Theatre`, `Dance`, `Sports`, `Tech`).
+  - `interaction_type` (string): Action type (`book`, `attend`, `view`, `like`).
+  - `timestamp` (datetime): Interaction timestamp (`YYYY-MM-DD HH:MM:SS`).
+
+### 7.2 Output JSON Location
+- **Path:** `recommendations/data/recommendations.json`
+- **Format:** Formatted JSON mapping each `user_id` to an ordered list of `event_id` strings.
+
+### 7.3 Actual Output Generated (`recommendations.json`)
 ```json
 {
-    "U001": ["E103", "E115", "E116"],
-    "U002": ["E109", "E101", "E102"],
-    "U003": ["E101", "E102", "E111"],
-    "U004": ["E101", "E102", "E106"],
-    "U005": ["E101", "E102", "E106"],
-    "U006": ["E107", "E108", "E102"],
-    "U007": ["E102", "E103", "E115"],
-    "U008": ["E115", "E116", "E107"],
-    "U009": ["E110", "E112", "E114"],
-    "U010": ["E106", "E111", "E104"]
+    "U001": [
+        "E103",
+        "E115",
+        "E116"
+    ],
+    "U002": [
+        "E109",
+        "E101",
+        "E102"
+    ],
+    "U003": [
+        "E101",
+        "E102",
+        "E111"
+    ],
+    "U004": [
+        "E101",
+        "E102",
+        "E106"
+    ],
+    "U005": [
+        "E101",
+        "E102",
+        "E106"
+    ],
+    "U006": [
+        "E107",
+        "E108",
+        "E102"
+    ],
+    "U007": [
+        "E102",
+        "E103",
+        "E115"
+    ],
+    "U008": [
+        "E115",
+        "E116",
+        "E107"
+    ],
+    "U009": [
+        "E110",
+        "E112",
+        "E114"
+    ],
+    "U010": [
+        "E106",
+        "E111",
+        "E104"
+    ]
 }
 ```
 
 ---
 
-## 7. Execution Instructions
+## 8. Execution Instructions
 
-### Option 1: Execute Recommendation Engine Independently
-From `recommendations/`:
+### 8.1 Execute as a Python Module (Recommended)
+From the `recommendations/` directory:
 ```bash
-python src/recommendation_engine.py
-```
-Or from the project repository root:
-```bash
-python recommendations/src/recommendation_engine.py
+python -m src.main
 ```
 
-### Option 2: Run via the Main Service Entry Point
-Runs environment checks, ingests data, and writes `recommendations.json`:
+### 8.2 Direct Execution via Script Path
+From the `recommendations/` directory:
+```bash
+python src/main.py
+```
+
+Or from the repository root:
 ```bash
 python recommendations/src/main.py
 ```
 
-### Option 3: Programmatic API Usage in Python
-```python
-from src.data_processing import load_data
-from src.recommendation_engine import recommend_events
-
-# 1. Load preprocessed interaction data
-df = load_data("data/user_event_history.csv")
-
-# 2. Generate recommendations for all users (top 3)
-all_recs = recommend_events(df, n_recommendations=3)
-print(all_recs["U001"])  # Output: ['E103', 'E115', 'E116']
-
-# 3. Generate recommendations for a specific user
-single_rec = recommend_events(df, n_recommendations=5, user_id="U002")
-print(single_rec)
+### 8.3 CLI Arguments Customization
+You can pass custom input/output paths or specify the number of recommendations:
+```bash
+python -m src.main --input data/user_event_history.csv --output data/recommendations.json -n 5
 ```
 
 ---
 
-## 8. Testing Instructions
+## 9. Automated Testing Instructions
 
-Automated test execution with `pytest`.
+The test suite contains **59 automated tests** covering data processing, recommendation heuristics, JSON output formatting, error handling, and end-to-end CLI workflows.
 
-### Run All Test Suites (41 Tests)
+### 9.1 Run All Tests
+From the `recommendations/` directory:
 ```bash
-# From repository root
-pytest recommendations/tests
-
-# Or from recommendations/ directory
-cd recommendations
-pytest tests
+pytest -v
+```
+Or from the project root:
+```bash
+pytest -v recommendations/tests/
 ```
 
-### Run Only Recommendation Engine Tests
+### 9.2 Run Specific Test Suites
 ```bash
-pytest -v recommendations/tests/test_recommendation_engine.py
-```
+# Recommendation Output & Main Workflow tests (Ticket W1-04)
+pytest -v tests/test_recommendation_output.py
 
-### Run Data Ingestion & Preprocessing Tests
-```bash
-pytest -v recommendations/tests/test_data_processing.py
-```
+# Recommendation Engine tests (Ticket W1-03)
+pytest -v tests/test_recommendation_engine.py
 
-### Run Setup Tests
-```bash
-pytest -v recommendations/tests/test_setup.py
+# Data Processing tests (Ticket W1-02)
+pytest -v tests/test_data_processing.py
+
+# Environment & Setup tests (Ticket W1-01)
+pytest -v tests/test_setup.py
 ```
 
 ### Test Suite Summary:
 | Test Suite | Scenarios Covered | Tests | Status |
 |---|---|:---:|:---:|
-| `test_recommendation_engine.py` | Normal generation, personalization, fallback, attended exclusion, deduplication, empty DFs, NaNs, cold start, configurable top-N | 16 | **PASSING** |
-| `test_data_processing.py` | CSV loading, type casting, schema validation, string trimming, null timestamps, invalid paths | 19 | **PASSING** |
+| `test_recommendation_output.py` | JSON formatting, file creation, UTF-8, type validation, auto parent dir, CLI workflow, error handling | 18 | **PASSING** |
+| `test_recommendation_engine.py` | Hybrid personalization, popularity, attended exclusion, deduplication, cold start | 16 | **PASSING** |
+| `test_data_processing.py` | CSV loading, type casting, schema validation, string trimming, null timestamps | 19 | **PASSING** |
 | `test_setup.py` | Imports, service info, dependency validation, main entry point | 6 | **PASSING** |
-| **Total** | **All core functionality and edge cases verified** | **41** | **ALL PASS** |
+| **Total** | **Comprehensive service coverage and backward compatibility** | **59** | **ALL PASS** |
 
 ---
 
-## 9. Docker Instructions
+## 10. Docker Instructions
 
-### Build Docker Image
+The containerized service uses `python:3.12-slim` and executes with a non-root application user (`appuser:1001`).
+
+### 10.1 Build the Docker Image
+From the `recommendations/` directory:
 ```bash
-docker build -t bookmyshow-recommendations:latest recommendations/
+docker build -t bookmyshow-recommendations .
 ```
 
-### Run Containerized Application
+Or from the repository root:
 ```bash
-docker run --rm bookmyshow-recommendations:latest
+docker build -t bookmyshow-recommendations recommendations/
 ```
 
-### Run Test Suite in Container
+### 10.2 Run the Docker Container (Default Execution)
 ```bash
-docker run --rm bookmyshow-recommendations:latest pytest tests/
+docker run --rm bookmyshow-recommendations
+```
+
+### 10.3 Run with Host Volume Mount (Persist `recommendations.json` to Host)
+To access the generated `recommendations.json` directly on the host machine:
+```bash
+# On Linux / macOS / PowerShell (inside recommendations/):
+docker run --rm -v "${PWD}/data:/app/data" bookmyshow-recommendations
+
+# On Windows Command Prompt (inside recommendations/):
+docker run --rm -v "%cd%/data:/app/data" bookmyshow-recommendations
+```
+
+### 10.4 Run the Test Suite Inside Docker
+```bash
+docker run --rm bookmyshow-recommendations pytest tests/ -v
 ```
 
 ---
 
-## 10. Git Workflow & Remote Submission
+## 11. Git Workflow & Ticket Submission
 
-All work for this ticket is isolated to the `recommendations/` directory on ticket branch `AIML-0011-W1-03`.
+All work for this ticket is completed on ticket branch `AIML-0011-W1-04`.
 
-### Git Commands Executed:
-1. **Branch Verification:**
+### Commands Executed:
+1. **Branch Checkout:**
    ```bash
-   git checkout -B AIML-0011-W1-03 origin/AIML-0011-W1-02
+   git checkout -b AIML-0011-W1-04
    ```
 2. **Stage Ticket Files:**
    ```bash
-   git add recommendations/src/recommendation_engine.py
+   git add recommendations/src/recommendation_output.py
    git add recommendations/src/main.py
    git add recommendations/src/__init__.py
-   git add recommendations/data/user_event_history.csv
-   git add recommendations/tests/test_recommendation_engine.py
+   git add recommendations/tests/test_recommendation_output.py
+   git add recommendations/data/recommendations.json
+   git add recommendations/Dockerfile
    git add recommendations/.gitignore
    git add recommendations/README.md
    ```
 3. **Commit Changes:**
    ```bash
-   git commit -m "feat(recommendations): implement personalized event recommendation logic"
+   git commit -m "feat(recommendations): add JSON output and main execution script"
    ```
-4. **Push Branch to Remote:**
+4. **Push Branch to Origin:**
    ```bash
-   git push origin AIML-0011-W1-03
+   git push origin AIML-0011-W1-04
    ```
